@@ -1,0 +1,142 @@
+stages:
+    - stage_build
+    - stage_test
+    - stage_deploy_dev
+    - stage_deploy_prd    
+    - stage_finish 
+
+variables:
+    OWNER_NAME   : Denis Astahov
+    CICD_VERSION : v1.0
+    LOG_FILE_NAME: $CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA.txt
+    LOG          : 1234.txt
+    #LOG_FILE_NAME: 123.txt
+
+image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+
+default:
+     artifacts:
+       paths:
+         - $LOG_FILE_NAME
+         - $LOG
+       expire_in: 1 week
+
+build_job:
+    stage: stage_build
+    tags:
+        - win
+        
+    
+    script:
+        - echo "---Build Started---"
+        - echo "Building..." >> $LOG_FILE_NAME
+        - echo "---Build Completed---" >> $LOG
+        - dir
+        - cat $LOG
+
+
+test_job1:
+    stage: stage_test
+    tags:
+        - win
+    dependencies: 
+        - build_job
+        - test_job2
+        - test_job1
+        
+    script:
+        - echo "---Test1 Started---"
+        - echo "Testing1..." >>  $LOG_FILE_NAME
+        - echo "---Test1 Completed---"   >> $LOG 
+        - dir
+        - cat $LOG
+
+
+test_job2:
+    stage: stage_test
+    tags:
+        - win
+
+    dependencies: 
+        - test_job1
+        - build_job
+        - test_job2
+    script:
+        - echo "---Test2 Started---"
+        - echo "Testing2..." >> $LOG_FILE_NAME
+        - echo "---Test2 Completed---"    >> $LOG 
+        - dir
+        - cat $LOG
+
+
+test_job3:
+    stage: stage_test
+    tags:
+        - win
+# dependencies pflftn какие stage БУДУТ передавть артефакты 
+    dependencies: 
+        - test_job1
+        - test_job2
+       # needs заставляет выполнить паралельно  test_job1 и  test_job2 затем test_job3
+    needs: [test_job1, test_job2]
+    script:
+        - echo "---Test3 Started---"
+        - echo "Testing3 FINAL..." >> $LOG_FILE_NAME
+        - echo "---Test3 Completed---" >> $LOG
+        - dir
+        - cat $LOG
+        
+
+deploy_to_dev_job:
+    stage: stage_deploy_dev
+    tags:
+        - win
+
+    dependencies:    
+        - test_job3
+        
+    rules:
+        - if: $CI_COMMIT_BRANCH == "dev"
+    script:
+        - echo "---Deploy to DEV Started---"
+        - echo "Deploy to DEV..." >> $LOG_FILE_NAME
+        - echo "---Deploy to DEV Completed---"    >> $LOG
+        - dir
+        - cat $LOG
+
+
+deploy_to_prd_job:
+    stage: stage_deploy_prd
+    tags:
+        - win
+
+    dependencies:    
+        - test_job3
+        
+    rules:
+        - if: $CI_COMMIT_BRANCH == "main"    
+    script:
+        - echo "---Deploy to PROD Started---"
+        - echo "Deploy to PROD..." >> $LOG_FILE_NAME
+        - echo "---Deploy to PROD Completed---"   >> $LOG
+        - dir
+        - cat $LOG 
+
+finish_job:
+    stage : stage_finish
+    tags:
+        - win
+    dependencies:    
+        - deploy_to_prd_job
+        - deploy_to_dev_job
+        
+    script:
+        - echo "---Finish Job Started---" >> $LOG
+        - echo "Finish!!!" >> $LOG_FILE_NAME
+        - echo "Owner of the Pipeline $CICD_VERSION is $OWNER_NAME" >> $LOG_FILE_NAME
+        - cat $LOG_FILE_NAME
+        - dir
+        - pwd 
+        - cat $LOG
+        - echo "---Finish Job Completed---" 
+        
