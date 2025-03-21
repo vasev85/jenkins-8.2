@@ -10,7 +10,7 @@ variables:
     CICD_VERSION : v1.0
     LOG_FILE_NAME: $CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA.txt
     LOG          : 1234.txt
-    #LOG_FILE_NAME: 123.txt
+    #LOG_FILE_NAME: 1233.txt
 
 image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
 
